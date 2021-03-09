@@ -1,0 +1,61 @@
+---
+- name: include vars based on environment
+  include_vars: {{ ENV }}.yml
+
+
+# gets status of app01/.synched
+- name: get status of synched
+  stat: 
+    path: "{{ synced_path }}/.synced"
+  register: synced
+
+#if this path exist, then the server is legacy 
+- name: determine if this app is legacy
+  stat: 
+    path: "{{ legacy_webroot }}"
+  register: legacy
+
+# if this path exists, then the server is not legacy
+- name: determine if this app is non-legacy
+  stat: 
+    path: "{{ webroot }}"
+  register: modern
+
+#sends to remote legacy servers
+- name: copy over index.html if legacy system AND if .synced file does not exist
+  template:
+    dest: "{{ legacy_webroot }}/index.html"
+    src: index.html.j2
+  when: not synced.stat.exists and legacy.stat.exists
+
+#sends to non legacy servers.
+- name: copy over index.html to non legacy servers
+  template:
+    dest: " {{ webroot }}/index.html"
+    src: index.html.j2
+  when: not synced.stat.exists and not legacy.stat.exists and modern.stat.exists
+
+#get apache version
+#this assumes that httpd is enabled and httpd -v returns an output of something like this
+#Server version: Apache/2.4.6 (Red Hat Enterprise Linux)
+#Server built:   May  9 2020 13:01:09
+- name: gets httpd version
+  shell: 
+    cmd: httpd -v | awk -F/ '{print $2}'
+  register: httpdversion
+
+- name: print httpd version
+  debug: 
+    msg: "Apache version:  {{ httpdversion.stdout }}"
+
+
+# Gets virtual hosts 
+- name: get the url/domain on apache virtual host
+  shell:
+    cmd: httpd -S | grep -Po '[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+  register: virtualhost
+
+# prints vhost(s)
+- name: print the url or domain
+  debug:
+    msg: "Vhosts: {{ virtualhost.stdout }} "

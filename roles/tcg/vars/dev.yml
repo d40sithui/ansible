@@ -1,0 +1,3 @@
+synced_path: "/app01/"
+legacy_webroot: "/app01/projects/jenkins/efeds-login"
+webroot: "/var/www/html"

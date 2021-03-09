@@ -1,0 +1,10 @@
+#Ansible entry point for tcg app
+#invoke with:
+# ansible-playbook -e ENV=dev -i inventories/tcg tcg.yml
+- name: Master playbook for tcg app
+  hosts: {{ ENV }}
+  become: true
+  vars:
+    ansible_host_key_checking: false
+  roles:
+    - tcg
